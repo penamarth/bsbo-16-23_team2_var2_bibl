@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+//Loan - займ книги (берём)
+//Reservation - резервация книги (возьмём позже, как появится)
+
 // Интерфейс Component
 public interface IComponent
 {
@@ -287,15 +290,15 @@ public class ReservationQueue
         return reservation != null ? activeReservations.IndexOf(reservation) + 1 : -1;
     }
 
-    public void NotifyNextReader()
-    {
-        var nextReservation = GetNextReservation();
-        if (nextReservation != null)
-        {
-            // Отправка уведомления
-            Console.WriteLine($"Notifying account {nextReservation.AccountId} about available book {BookId}");
-        }
-    }
+    // public void NotifyNextReader()
+    // {
+    //     var nextReservation = GetNextReservation();
+    //     if (nextReservation != null)
+    //     {
+    //         // Отправка уведомления
+    //         Console.WriteLine($"Notifying account {nextReservation.AccountId} about available book {BookId}");
+    //     }
+    // }
 }
 
 // Класс Loan
@@ -416,12 +419,13 @@ public class ISB
 
     public Account Authenticate(string login, string password)
     {
-        // Аутентификация
+        //пытаемся найти первый аккаунт в хранилище
         return accounts.Values.FirstOrDefault(a => a.Email == login);
     }
 
     public List<BookInfo> SearchBooks(string title, string author)
     {
+        //поиск через паттерн
         return catalog.SearchBooks(title, author);
     }
 
@@ -450,7 +454,7 @@ public class ISB
     public Loan IssueBook(string accountId, string bookId, DateTime issueDate, DateTime dueDate)
     {
         if (!accounts.ContainsKey(accountId) || !accounts[accountId].CanBorrowMore())
-            throw new InvalidOperationException("Cannot issue book to this account");
+            throw new InvalidOperationException("Cannot issue book to this account. Dont have permissions");
 
         var bookLocation = catalog.FindBook(bookId);
         if (bookLocation == null || !bookLocation.IsAvailable)
@@ -478,31 +482,27 @@ public class ISB
 
     public void UpdateReturnBook(string bookId)
     {
+        //ищем задолженность 
         var loan = activeLoans.Values.FirstOrDefault(l => l.BookItemId == bookId);
         if (loan != null)
         {
             var account = accounts[loan.AccountId];
-            account.CurrentLoans--;
-            account.BooksOnHand.Remove(bookId);
+            account.CurrentLoans--; //уменьшаем задолженность
+            account.BooksOnHand.Remove(bookId); //забираем книгу из рук
             activeLoans.Remove(loan.Id);
-
-            // Уведомляем следующего в очереди резервации
-            if (reservationQueues.ContainsKey(bookId))
-            {
-                reservationQueues[bookId].NotifyNextReader();
-            }
         }
     }
 
     public Account GetUserInfo(string id)
     {
+        //запись вида: если есть аккаунт - то вернём аккаунт, иначе null
         return accounts.ContainsKey(id) ? accounts[id] : null;
     }
 
     public string ScanQRCode(string qrData)
     {
-        // Парсинг QR-кода
-        return qrData; 
+        // Парсинг QR-кода, по факту передаём id, но подразумеваем qr
+        return qrData;
     }
 
     public bool TryFindAccount(string id)
@@ -512,6 +512,7 @@ public class ISB
 
     public Dictionary<string, Loan> GetActiveLoans()
     {
+        //возвращаем копию, для безопасности
         return new Dictionary<string, Loan>(activeLoans);
     }
 }
