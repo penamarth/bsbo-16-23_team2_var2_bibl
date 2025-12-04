@@ -412,6 +412,7 @@ public class ISB
 
     public Account RegisterAccount(string fullName, string phone, string email)
     {
+        Console.WriteLine($"ISB: RegisterAccount: name - {fullName}, phone - {phone}, email - {email}");
         var account = new Account(fullName, phone, email);
         accounts[account.Id] = account;
         return account;
@@ -420,17 +421,23 @@ public class ISB
     public Account Authenticate(string login, string password)
     {
         //пытаемся найти первый аккаунт в хранилище
-        return accounts.Values.FirstOrDefault(a => a.Email == login);
+        Console.WriteLine("ISB: Authenticate");
+        Console.WriteLine("Try to find account");
+        var result = accounts.Values.FirstOrDefault(a => a.Email == login);
+        Console.WriteLine($"result of search: {result}");
+        return result;
     }
 
     public List<BookInfo> SearchBooks(string title, string author)
     {
+        Console.WriteLine($"ISB: Search book by pattern. Book parametrs: title - {title}, author - {author}");
         //поиск через паттерн
         return catalog.SearchBooks(title, author);
     }
 
     public Reservation ReserveBook(string accountId, string bookId)
     {
+        Console.WriteLine($"ISB: Reserve book: account: {accountId}, book: {bookId}");
         if (!accounts.ContainsKey(accountId))
             throw new ArgumentException("Account not found");
 
@@ -446,20 +453,23 @@ public class ISB
             AccountId = accountId,
             BookId = bookId
         };
-
+        Console.WriteLine("add reservation");
         accounts[accountId].AddReservation(reservationId);
         return reservation;
     }
 
     public Loan IssueBook(string accountId, string bookId, DateTime issueDate, DateTime dueDate)
     {
+        Console.WriteLine($"ISB: Issue book: {bookId}, start date: {issueDate}, end date: {dueDate}");
         if (!accounts.ContainsKey(accountId) || !accounts[accountId].CanBorrowMore())
             throw new InvalidOperationException("Cannot issue book to this account. Dont have permissions");
 
+        Console.WriteLine("try to find book in catalog");
         var bookLocation = catalog.FindBook(bookId);
         if (bookLocation == null || !bookLocation.IsAvailable)
             throw new InvalidOperationException("Book not available");
 
+        Console.WriteLine("create loan");
         var loan = accounts[accountId].CreateLoan(accountId, bookId, issueDate, dueDate);
         activeLoans[loan.Id] = loan;
         accounts[accountId].AddLoan(loan.Id);
@@ -470,6 +480,7 @@ public class ISB
 
     public bool CheckReturnBook(string bookId)
     {
+        Console.WriteLine("ISB: check return book");
         // Проверка на долг по книге
         var loan = activeLoans.Values.FirstOrDefault(l => l.BookItemId == bookId);
         if (loan != null)
@@ -482,12 +493,15 @@ public class ISB
 
     public void UpdateReturnBook(string bookId)
     {
+        Console.WriteLine("ISB: update return book");
         //ищем задолженность 
         var loan = activeLoans.Values.FirstOrDefault(l => l.BookItemId == bookId);
         if (loan != null)
         {
             var account = accounts[loan.AccountId];
+            Console.WriteLine("currentLoans - 1");
             account.CurrentLoans--; //уменьшаем задолженность
+            Console.WriteLine("pick up the book (also in account info) :)");
             account.BooksOnHand.Remove(bookId); //забираем книгу из рук
             activeLoans.Remove(loan.Id);
         }
@@ -495,23 +509,27 @@ public class ISB
 
     public Account GetUserInfo(string id)
     {
+        Console.WriteLine("ISB: get user info if exists");
         //запись вида: если есть аккаунт - то вернём аккаунт, иначе null
         return accounts.ContainsKey(id) ? accounts[id] : null;
     }
 
     public string ScanQRCode(string qrData)
     {
+        Console.WriteLine("ISB: scan qr code to get account id");
         // Парсинг QR-кода, по факту передаём id, но подразумеваем qr
         return qrData;
     }
 
     public bool TryFindAccount(string id)
     {
+        Console.WriteLine("ISB: try find account");
         return accounts.ContainsKey(id);
     }
 
     public Dictionary<string, Loan> GetActiveLoans()
     {
+        Console.WriteLine("ISB: get active loans");
         //возвращаем копию, для безопасности
         return new Dictionary<string, Loan>(activeLoans);
     }
@@ -523,19 +541,19 @@ class Program
     static void Main(string[] args)
     {
         var isb = new ISB();
-        
+
         // Регистрация аккаунта
         var account = isb.RegisterAccount("Иван Иванов", "+79123456789", "ivan@example.com");
-        
+
         // Поиск книг
         var books = isb.SearchBooks("C#", "Microsoft");
-        
+
         // Резервация книги
         var reservation = isb.ReserveBook(account.Id, "book123");
-        
+
         // Выдача книги
         var loan = isb.IssueBook(account.Id, "book123", DateTime.Now, DateTime.Now.AddDays(14));
-        
+
         Console.WriteLine($"Account created: {account.FullName}");
         Console.WriteLine($"Books found: {books.Count}");
         Console.WriteLine($"Reservation ID: {reservation.Id}");
