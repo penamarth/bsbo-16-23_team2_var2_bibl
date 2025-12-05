@@ -1,3 +1,0 @@
-# Указываем, что .png файлы - бинарные
-*.png binary
-*.puml text eol=crlf
