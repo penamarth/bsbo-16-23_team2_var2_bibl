@@ -484,10 +484,21 @@ public class Account
         bool isActive = Status == "Active";
         bool withinLimit = CurrentLoans < 5;
         
+        Console.WriteLine($"Parameters - BooksOnHand.Count: {BooksOnHand.Count}, " +
+                         $"max allowed: {maxBooksAllowed}, withinLimit: {withinLimit}");
+        Console.WriteLine($"hasOverdue: {hasOverdue}, hasFines: {hasFines}, isActive: {isActive}");
+        
         bool result = withinLimit && !hasOverdue && !hasFines && isActive;
         
-        Console.WriteLine($"Result - withinLimit: {withinLimit}, !hasOverdue: {!hasOverdue}, " +
-                         $"!hasFines: {!hasFines}, isActive: {isActive}, total: {result}");
+        if (!result)
+        {
+            Console.WriteLine($"Account {Id} cannot borrow more books. Reasons:");
+            if (!withinLimit) Console.WriteLine($"  - Reached book limit: {BooksOnHand.Count}/{maxBooksAllowed}");
+            if (hasOverdue) Console.WriteLine($"  - Has {CurrentLoans} overdue book(s)");
+            if (hasFines) Console.WriteLine($"  - Has unpaid fines ({CurrentLoans} overdue books)");
+            if (!isActive) Console.WriteLine($"  - Account is not active (status: {Status})");
+        }
+        
         return result;
     }
 
