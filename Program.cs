@@ -519,7 +519,8 @@ public class Account
         Email = email;
         Status = "Active";
         CurrentLoans = 0;
-        Console.WriteLine($"Account created with ID: {Id}");
+        Console.WriteLine($"Initial values ​​are set, status is active");
+        Console.WriteLine($"Account created with QR-code: {Id}");
     }
 
     public bool HasOverdueBooks()
@@ -674,6 +675,7 @@ public class ISB
         Console.WriteLine($"ISB: RegisterAccount: name - {fullName}, phone - {phone}, email - {email}");
         var account = new Account(fullName, phone, email);
         accounts[account.Id] = account;
+        Console.WriteLine($"ISB: RegisterAccount: the Account object is added to the accounts collection");
         return account;
     }
 
