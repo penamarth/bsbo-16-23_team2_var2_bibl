@@ -443,61 +443,130 @@ public class Account
 
     public Account(string fullName, string phone, string email)
     {
+        Console.WriteLine("Account: Constructor");
+        Console.WriteLine($"Creating new account with data - fullName: {fullName}, phone: {phone}, email: {email}");
         Id = Guid.NewGuid().ToString();
         FullName = fullName;
         Phone = phone;
         Email = email;
         Status = "Active";
         CurrentLoans = 0;
+        Console.WriteLine($"Account created with ID: {Id}");
     }
 
     public bool HasOverdueBooks()
     {
         // Проверка просроченных книг
+        Console.WriteLine("Account: HasOverdueBooks");
+        Console.WriteLine("Checking if account has overdue books");
+        bool result = false; // Временная заглушка
+        Console.WriteLine($"Result: {result}");
         return false;
     }
 
     public bool HasUnpaidFines()
     {
+        Console.WriteLine("Account: HasUnpaidFines");
+        Console.WriteLine("Checking if account has unpaid fines");
         // Проверка неуплаченных штрафов
-        return false;
+        bool result = false; // Временная заглушка
+        Console.WriteLine($"Result: {result}");
+        return result;
     }
 
     public bool CanBorrowMore()
     {
-        return CurrentLoans < 5 && !HasOverdueBooks() && !HasUnpaidFines() && Status == "Active";
+        Console.WriteLine("Account: CanBorrowMore");
+        Console.WriteLine($"Checking if account can borrow more books. Current loans: {CurrentLoans}, Max allowed: 5");
+        bool hasOverdue = HasOverdueBooks();
+        bool hasFines = HasUnpaidFines();
+        bool isActive = Status == "Active";
+        bool withinLimit = CurrentLoans < 5;
+        
+        bool result = withinLimit && !hasOverdue && !hasFines && isActive;
+        
+        Console.WriteLine($"Result - withinLimit: {withinLimit}, !hasOverdue: {!hasOverdue}, " +
+                         $"!hasFines: {!hasFines}, isActive: {isActive}, total: {result}");
+        return result;
     }
 
     public void AddLoan(string loanId)
     {
+        Console.WriteLine("Account: AddLoan");
+        Console.WriteLine($"Adding loan with ID: {loanId}. Current loans before: {CurrentLoans}");
         CurrentLoans++;
+        Console.WriteLine($"Current loans after: {CurrentLoans}");
         // BooksOnHand будет обновляться при создании Loan
     }
 
     public void AddReservation(string reservationId)
     {
+        Console.WriteLine("Account: AddReservation");
+        Console.WriteLine($"Adding reservation with ID: {reservationId}. Current reservations: {CurrentReservations.Count}");
         CurrentReservations.Add(reservationId);
+        Console.WriteLine($"Reservation added. New reservation count: {CurrentReservations.Count}");
     }
 
-    public string GetFullName() => FullName;
-    public string GetPhone() => Phone;
-    public string GetEmail() => Email;
-    public string GetId() => Id;
-    public string GetStatus() => Status;
+    public string GetFullName()
+    {
+        Console.WriteLine("Account: GetFullName");
+        Console.WriteLine($"Returning full name: {FullName}");
+        return FullName;
+    }
+    
+    public string GetPhone()
+    {
+        Console.WriteLine("Account: GetPhone");
+        Console.WriteLine($"Returning phone: {Phone}");
+        return Phone;
+    }
+    
+    public string GetEmail()
+    {
+        Console.WriteLine("Account: GetEmail");
+        Console.WriteLine($"Returning email: {Email}");
+        return Email;
+    }
+    
+    public string GetId()
+    {
+        Console.WriteLine("Account: GetId");
+        Console.WriteLine($"Returning ID: {Id}");
+        return Id;
+    }
+    
+    public string GetStatus()
+    {
+        Console.WriteLine("Account: GetStatus");
+        Console.WriteLine($"Returning status: {Status}");
+        return Status;
+    }
 
     public bool CheckStatus(int id)
     {
-        return Status == "Active";
+        Console.WriteLine("Account: CheckStatus");
+        Console.WriteLine($"Checking if account with ID {id} is active. Current status: {Status}");
+        bool result = Status == "Active";
+        Console.WriteLine($"Result: {result}");
+        return result;
     }
 
     public void SetStatus(string status)
     {
+        Console.WriteLine("Account: SetStatus");
+        Console.WriteLine($"Changing status from '{Status}' to '{status}'");
         Status = status;
+        Console.WriteLine($"Status updated. New status: {Status}");
     }
 
     public Loan CreateLoan(string accountId, string bookItemId, DateTime issueDate, DateTime dueDate)
     {
-        return new Loan(accountId, bookItemId, issueDate, dueDate);
+        Console.WriteLine("Account: CreateLoan");
+        Console.WriteLine($"Creating loan - accountId: {accountId}, bookItemId: {bookItemId}, " +
+                         $"issueDate: {issueDate}, dueDate: {dueDate}");
+        var loan = new Loan(accountId, bookItemId, issueDate, dueDate);
+        Console.WriteLine($"Loan created with ID: {loan.Id}");
+        return loan;
     }
 }
 
