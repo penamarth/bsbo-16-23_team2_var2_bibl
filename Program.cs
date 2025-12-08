@@ -337,7 +337,6 @@ public class Catalog : IComponent
 }
 
 
-// Класс Reservation
 public class Reservation
 {
     public string Id { get; set; }
@@ -349,22 +348,38 @@ public class Reservation
 
     public string AddReservation(string accountId, string bookId)
     {
+        Console.WriteLine($"[Reservation] AddReservation вызван. AccountId: {accountId}, BookId: {bookId}");
+
         AccountId = accountId;
         BookId = bookId;
         CreateDate = DateTime.Now;
         Status = "Active";
         ExpiryDate = DateTime.Now.AddDays(7);
+
+        Console.WriteLine($"[Reservation] Данные обновлены. Статус: {Status}, Дата создания: {CreateDate}, Истекает: {ExpiryDate}");
+        Console.WriteLine($"[Reservation] Возвращаю Id: {Id}");
+        
         return Id;
     }
 
     public void Cancel()
     {
+        Console.WriteLine($"[Reservation] Cancel вызван для Id: {Id}. Текущий статус: {Status}");
         Status = "Cancelled";
+        Console.WriteLine($"[Reservation] Статус изменен на: {Status}");
     }
 
     public void Fulfill()
     {
+        Console.WriteLine($"[Reservation] Fulfill вызван для Id: {Id}. Текущий статус: {Status}");
         Status = "Fulfilled";
+        Console.WriteLine($"[Reservation] Статус изменен на: {Status}");
+    }
+
+    // Переопределим ToString для удобного вывода объекта целиком
+    public override string ToString()
+    {
+        return $"Reservation(Id={Id}, Account={AccountId}, Status={Status})";
     }
 }
 
@@ -376,38 +391,48 @@ public class ReservationQueue
 
     public string AddReservation(string accountId, string bookId)
     {
+        Console.WriteLine($"\n[Queue] Добавление бронирования в очередь. Account: {accountId}, Book: {bookId}");
+        
         var reservation = new Reservation
         {
             Id = Guid.NewGuid().ToString(),
             AccountId = accountId,
             BookId = bookId
         };
+        
+        // Тут вызывается метод самого бронирования
         reservation.AddReservation(accountId, bookId);
+        
         Reservations.Add(reservation);
+        
+        Console.WriteLine($"[Queue] Бронирование добавлено в список. Всего в очереди: {Reservations.Count}");
         return reservation.Id;
     }
 
     public Reservation GetNextReservation()
     {
-        return Reservations.FirstOrDefault(r => r.Status == "Active");
+        Console.WriteLine("[Queue] Поиск следующего активного бронирования...");
+        var next = Reservations.FirstOrDefault(r => r.Status == "Active");
+        
+        if (next != null)
+            Console.WriteLine($"[Queue] Найдено: {next}");
+        else
+            Console.WriteLine("[Queue] Активных бронирований не найдено.");
+
+        return next;
     }
 
     public int GetPosition(string accountId)
     {
+        Console.WriteLine($"[Queue] Вычисление позиции для Account: {accountId}");
         var activeReservations = Reservations.Where(r => r.Status == "Active").ToList();
         var reservation = activeReservations.FirstOrDefault(r => r.AccountId == accountId);
-        return reservation != null ? activeReservations.IndexOf(reservation) + 1 : -1;
+        
+        int position = reservation != null ? activeReservations.IndexOf(reservation) + 1 : -1;
+        
+        Console.WriteLine($"[Queue] Позиция: {position}");
+        return position;
     }
-
-    // public void NotifyNextReader()
-    // {
-    //     var nextReservation = GetNextReservation();
-    //     if (nextReservation != null)
-    //     {
-    //         // Отправка уведомления
-    //         Console.WriteLine($"Notifying account {nextReservation.AccountId} about available book {BookId}");
-    //     }
-    // }
 }
 
 // Класс Loan
@@ -421,13 +446,17 @@ public class Loan
 
     public Loan(string accountId, string bookItemId, DateTime issueDate, DateTime dueDate)
     {
+        Console.WriteLine($"\n[Loan] Создание нового займа (Loan)...");
         Id = Guid.NewGuid().ToString();
         AccountId = accountId;
         BookItemId = bookItemId;
         IssueDate = issueDate;
         DueDate = dueDate;
+        
+        Console.WriteLine($"[Loan] Займ создан: Id={Id}, Account={AccountId}, Срок до: {DueDate}");
     }
 }
+
 
 // Класс Account
 public class Account
