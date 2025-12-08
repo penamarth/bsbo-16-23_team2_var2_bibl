@@ -10,6 +10,7 @@ public interface IComponent
 {
     IComponent FindAvailableLocation();
     List<BookInfo> SearchBooks(string title, string author);
+    bool PlaceBook(BookInstance book);
 }
 
 // Базовый класс для информации о книге
@@ -19,6 +20,7 @@ public class BookInfo
     public string Title { get; set; }
     public string Author { get; set; }
     public int Year { get; set; }
+    public string Description { get; set; }
 }
 
 // Базовый класс для расположения книги
@@ -27,6 +29,7 @@ public class BookLocation
     public string BookId { get; set; }
     public IComponent Location { get; set; }
     public bool IsAvailable { get; set; }
+    public BookInstance BookInstance { get; set; }
 }
 
 // Класс Book
@@ -46,6 +49,7 @@ public class BookInstance
 {
     public string Id { get; set; }
     public string BookId { get; set; }
+    public Book Book { get; set; }
     public string Status { get; set; }
     public IComponent Location { get; set; }
     public string UserId { get; set; }
@@ -66,6 +70,12 @@ public class BookInstance
 public class Cell : IComponent
 {
     public BookInstance BookItem { get; set; }
+    public string Id { get; set; }
+
+    public Cell(string id)
+    {
+        Id = id;
+    }
 
     public IComponent FindAvailableLocation()
     {
@@ -86,19 +96,48 @@ public class Cell : IComponent
     public List<BookInfo> SearchBooks(string title, string author)
     {
         var result = new List<BookInfo>();
-        if (BookItem != null)
+        if (BookItem != null && BookItem.Book != null)
         {
-            // Поиск по базе данных книг
-            result.Add(new BookInfo { Id = BookItem.BookId });
+            // Проверяем соответствие поисковому запросу
+            bool matches = true;
+            if (!string.IsNullOrEmpty(title) && 
+                !BookItem.Book.Title.Contains(title, StringComparison.OrdinalIgnoreCase))
+                matches = false;
+            if (!string.IsNullOrEmpty(author) && 
+                !BookItem.Book.Author.Contains(author, StringComparison.OrdinalIgnoreCase))
+                matches = false;
+            
+            if (matches)
+            {
+                result.Add(new BookInfo 
+                { 
+                    Id = BookItem.Book.Id,
+                    Title = BookItem.Book.Title,
+                    Author = BookItem.Book.Author,
+                    Year = BookItem.Book.Year,
+                    Description = BookItem.Book.Description
+                });
+            }
         }
         return result;
     }
 }
 
+
 // Класс Shelf
 public class Shelf : IComponent
 {
+    public string Id { get; set; }
     public List<Cell> Children { get; set; } = new List<Cell>();
+
+    public Shelf(string id, int cellCount)
+    {
+        Id = id;
+        for (int i = 0; i < cellCount; i++)
+        {
+            Children.Add(new Cell($"{id}-Cell-{i}"));
+        }
+    }
 
     public IComponent FindAvailableLocation()
     {
@@ -132,10 +171,21 @@ public class Shelf : IComponent
     }
 }
 
+
 // Класс Cabinet
 public class Cabinet : IComponent
 {
+    public string Id { get; set; }
     public List<Shelf> Children { get; set; } = new List<Shelf>();
+
+    public Cabinet(string id, int shelfCount, int cellsPerShelf)
+    {
+        Id = id;
+        for (int i = 0; i < shelfCount; i++)
+        {
+            Children.Add(new Shelf($"{id}-Shelf-{i}", cellsPerShelf));
+        }
+    }
 
     public IComponent FindAvailableLocation()
     {
@@ -169,30 +219,44 @@ public class Cabinet : IComponent
     }
 }
 
+
 // Класс Catalog
-public class Catalog
+public class Catalog : IComponent
 {
     public List<Book> Books { get; set; } = new List<Book>();
     private List<BookInstance> BookInstances { get; set; } = new List<BookInstance>();
-    public IComponent RootComponent { get; set; }
+    public Cabinet RootCabinet { get; set; } // Изменено с IComponent на Cabinet
+
+    public Catalog()
+    {
+        // Инициализация хранилища
+        InitializeStorage();
+    }
+
+    private void InitializeStorage()
+    {
+        // Создаем кабинет с 5 полками по 10 ячеек каждая
+        RootCabinet = new Cabinet("MainCabinet", 5, 10);
+    }
 
     public List<BookInfo> SearchBooks(string title, string author)
     {
-        if (RootComponent != null)
+        if (RootCabinet != null)
         {
-            return RootComponent.SearchBooks(title, author);
+            return RootCabinet.SearchBooks(title, author);
         }
 
-        // Альтернативный поиск, если нет иерархии компонентов
+        // Альтернативный поиск по книгам
         return Books.Where(b =>
-            (string.IsNullOrEmpty(title) || b.Title.Contains(title)) &&
-            (string.IsNullOrEmpty(author) || b.Author.Contains(author)))
+            (string.IsNullOrEmpty(title) || b.Title.Contains(title, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(author) || b.Author.Contains(author, StringComparison.OrdinalIgnoreCase)))
             .Select(b => new BookInfo
             {
                 Id = b.Id,
                 Title = b.Title,
                 Author = b.Author,
-                Year = b.Year
+                Year = b.Year,
+                Description = b.Description
             }).ToList();
     }
 
@@ -205,7 +269,24 @@ public class Catalog
             {
                 BookId = bookId,
                 Location = bookInstance.Location,
-                IsAvailable = true
+                IsAvailable = true,
+                BookInstance = bookInstance
+            };
+        }
+        return null;
+    }
+
+    public BookLocation FindBookByItemId(string bookItemId)
+    {
+        var bookInstance = BookInstances.FirstOrDefault(bi => bi.Id == bookItemId);
+        if (bookInstance != null)
+        {
+            return new BookLocation
+            {
+                BookId = bookInstance.BookId,
+                Location = bookInstance.Location,
+                IsAvailable = bookInstance.IsAvailable(),
+                BookInstance = bookInstance
             };
         }
         return null;
@@ -213,7 +294,7 @@ public class Catalog
 
     public IComponent FindAvailableLocation()
     {
-        return RootComponent?.FindAvailableLocation();
+        return RootCabinet?.FindAvailableLocation();
     }
 
     public IComponent GetBookLocation(string bookItemId)
@@ -222,11 +303,39 @@ public class Catalog
         return bookInstance?.Location;
     }
 
+    public void AddBook(Book book)
+    {
+        Books.Add(book);
+    }
+
     public void AddBookInstance(BookInstance bookInstance)
     {
-        BookInstances.Add(bookInstance);
+        // Находим соответствующую книгу
+        var book = Books.FirstOrDefault(b => b.Id == bookInstance.BookId);
+        if (book != null)
+        {
+            bookInstance.Book = book;
+            book.BooksAvailable.Add(bookInstance.Id);
+        }
+        
+        // Размещаем книгу в хранилище
+        if (RootCabinet != null && RootCabinet.PlaceBook(bookInstance))
+        {
+            BookInstances.Add(bookInstance);
+            Console.WriteLine($"Книга {bookInstance.BookId} размещена в хранилище");
+        }
+        else
+        {
+            Console.WriteLine($"Не удалось разместить книгу {bookInstance.BookId} - нет свободных мест");
+        }
+    }
+
+    public bool PlaceBook(BookInstance book)
+    {
+        return RootCabinet?.PlaceBook(book) ?? false;
     }
 }
+
 
 // Класс Reservation
 public class Reservation
