@@ -458,10 +458,11 @@ public class Account
     {
         // Проверка просроченных книг
         Console.WriteLine("Account: HasOverdueBooks");
-        Console.WriteLine("Checking if account has overdue books");
-        bool result = false; // Временная заглушка
-        Console.WriteLine($"Result: {result}");
-        return false;
+        Console.WriteLine("Checking if account {Id} has overdue books");
+        Console.WriteLine($"CurrentLoans (overdue count) = {CurrentLoans}");
+        // Если CurrentLoans > 0, значит есть просроченные книги
+        bool result = CurrentLoans > 0;
+        return result;
     }
 
     public bool HasUnpaidFines()
