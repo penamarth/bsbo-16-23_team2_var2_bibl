@@ -550,7 +550,8 @@ public class Account
         bool hasOverdue = HasOverdueBooks();
         bool hasFines = HasUnpaidFines();
         bool isActive = Status == "Active";
-        bool withinLimit = CurrentLoans < 5;
+        int maxBooksAllowed = 5;
+        bool withinLimit = CurrentLoans < maxBooksAllowed;
         
         Console.WriteLine($"Parameters - BooksOnHand.Count: {BooksOnHand.Count}, " +
                          $"max allowed: {maxBooksAllowed}, withinLimit: {withinLimit}");
