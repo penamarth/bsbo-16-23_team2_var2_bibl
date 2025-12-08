@@ -337,123 +337,162 @@ public class Catalog : IComponent
 }
 
 
+// Класс Reservation
 public class Reservation
 {
-    public string Id { get; set; }
-    public string AccountId { get; set; }
-    public string BookId { get; set; }
-    public DateTime CreateDate { get; set; }
-    public string Status { get; set; }
-    public DateTime ExpiryDate { get; set; }
+    // Поля диаграммы (сделаны свойствами с private set для имитации приватных полей с доступом на чтение)
+    public string Id { get; private set; }
+    public string AccountId { get; private set; }
+    public string BookId { get; private set; }
+    public DateTime CreateDate { get; private set; }
+    public string Status { get; private set; }
+    public DateTime ExpiryDate { get; private set; }
 
+    // Конструктор по умолчанию (необходим, так как AddReservation инициализирует объект)
+    public Reservation() 
+    {
+        // Инициализируем ID сразу, или можно внутри AddReservation,
+        // но обычно объект должен иметь ID.
+        Id = Guid.NewGuid().ToString(); 
+    }
+
+    // Метод AddReservation согласно диаграмме: + addReservation(accountId: String, bookId: String): String
     public string AddReservation(string accountId, string bookId)
     {
-        Console.WriteLine($"[Reservation] AddReservation вызван. AccountId: {accountId}, BookId: {bookId}");
+        Console.WriteLine($"[Reservation] Вызван AddReservation. AccountId: {accountId}, BookId: {bookId}");
 
         AccountId = accountId;
         BookId = bookId;
         CreateDate = DateTime.Now;
         Status = "Active";
-        ExpiryDate = DateTime.Now.AddDays(7);
+        ExpiryDate = DateTime.Now.AddDays(7); // Логика срока действия (например, 7 дней)
 
-        Console.WriteLine($"[Reservation] Данные обновлены. Статус: {Status}, Дата создания: {CreateDate}, Истекает: {ExpiryDate}");
-        Console.WriteLine($"[Reservation] Возвращаю Id: {Id}");
-        
+        Console.WriteLine($"[Reservation] Состояние обновлено: Id={Id}, Status={Status}, CreateDate={CreateDate}");
         return Id;
     }
 
+    // Метод Cancel согласно диаграмме: + cancel(): void
     public void Cancel()
     {
-        Console.WriteLine($"[Reservation] Cancel вызван для Id: {Id}. Текущий статус: {Status}");
+        Console.WriteLine($"[Reservation] Вызван Cancel для брони {Id}. Текущий статус: {Status}");
         Status = "Cancelled";
-        Console.WriteLine($"[Reservation] Статус изменен на: {Status}");
+        Console.WriteLine($"[Reservation] Новый статус: {Status}");
     }
 
+    // Метод Fulfill согласно диаграмме: + fulfill(): void
     public void Fulfill()
     {
-        Console.WriteLine($"[Reservation] Fulfill вызван для Id: {Id}. Текущий статус: {Status}");
+        Console.WriteLine($"[Reservation] Вызван Fulfill для брони {Id}. Текущий статус: {Status}");
         Status = "Fulfilled";
-        Console.WriteLine($"[Reservation] Статус изменен на: {Status}");
+        Console.WriteLine($"[Reservation] Новый статус: {Status}");
     }
 
-    // Переопределим ToString для удобного вывода объекта целиком
     public override string ToString()
     {
-        return $"Reservation(Id={Id}, Account={AccountId}, Status={Status})";
+        return $"[Reservation: {Id}, Account: {AccountId}, Status: {Status}]";
     }
 }
 
 // Класс ReservationQueue
 public class ReservationQueue
 {
-    public string BookId { get; set; }
-    public List<Reservation> Reservations { get; set; } = new List<Reservation>();
+    // Поля диаграммы: - bookId: String, - reservations: List<Reservation>
+    private string _bookId;
+    private List<Reservation> _reservations = new List<Reservation>();
 
-    public string AddReservation(string accountId, string bookId)
+    // Конструктор не указан в диаграмме явно, но нужен для установки bookId
+    public ReservationQueue(string bookId)
     {
-        Console.WriteLine($"\n[Queue] Добавление бронирования в очередь. Account: {accountId}, Book: {bookId}");
-        
-        var reservation = new Reservation
-        {
-            Id = Guid.NewGuid().ToString(),
-            AccountId = accountId,
-            BookId = bookId
-        };
-        
-        // Тут вызывается метод самого бронирования
-        reservation.AddReservation(accountId, bookId);
-        
-        Reservations.Add(reservation);
-        
-        Console.WriteLine($"[Queue] Бронирование добавлено в список. Всего в очереди: {Reservations.Count}");
-        return reservation.Id;
+        _bookId = bookId;
     }
 
+    // Метод: + addReservation(accountId: String, bookId: String): String
+    public string AddReservation(string accountId, string bookId)
+    {
+        Console.WriteLine($"\n[ReservationQueue] Добавление в очередь. Книга: {bookId}, Аккаунт: {accountId}");
+        
+        // В диаграмме этот метод принимает bookId, хотя сама очередь уже привязана к книге.
+        // Возможно, это для сверки или если очередь общая (хотя диаграмма ISB говорит Map<String, ReservationQueue>).
+        if (bookId != _bookId)
+        {
+            Console.WriteLine($"[ReservationQueue] Внимание! ID книги ({bookId}) не совпадает с ID очереди ({_bookId}). Обновляем ID очереди.");
+            _bookId = bookId;
+        }
+
+        var reservation = new Reservation();
+        string resId = reservation.AddReservation(accountId, bookId);
+        
+        _reservations.Add(reservation);
+        Console.WriteLine($"[ReservationQueue] Бронь добавлена. Всего в очереди: {_reservations.Count}");
+        
+        return resId;
+    }
+
+    // Метод: + getNextReservation(): Reservation
     public Reservation GetNextReservation()
     {
-        Console.WriteLine("[Queue] Поиск следующего активного бронирования...");
-        var next = Reservations.FirstOrDefault(r => r.Status == "Active");
+        Console.WriteLine("[ReservationQueue] Запрос следующей активной брони...");
+        var next = _reservations.FirstOrDefault(r => r.Status == "Active");
         
         if (next != null)
-            Console.WriteLine($"[Queue] Найдено: {next}");
+            Console.WriteLine($"[ReservationQueue] Найдена бронь: {next.Id} для {next.AccountId}");
         else
-            Console.WriteLine("[Queue] Активных бронирований не найдено.");
-
+            Console.WriteLine("[ReservationQueue] Активных броней нет.");
+            
         return next;
     }
 
+    // Метод: + getPosition(accountId: String): int
     public int GetPosition(string accountId)
     {
-        Console.WriteLine($"[Queue] Вычисление позиции для Account: {accountId}");
-        var activeReservations = Reservations.Where(r => r.Status == "Active").ToList();
+        Console.WriteLine($"[ReservationQueue] Вычисление позиции для {accountId}...");
+        var activeReservations = _reservations.Where(r => r.Status == "Active").ToList();
         var reservation = activeReservations.FirstOrDefault(r => r.AccountId == accountId);
         
-        int position = reservation != null ? activeReservations.IndexOf(reservation) + 1 : -1;
-        
-        Console.WriteLine($"[Queue] Позиция: {position}");
-        return position;
+        int pos = reservation != null ? activeReservations.IndexOf(reservation) + 1 : -1;
+        Console.WriteLine($"[ReservationQueue] Позиция: {pos}");
+        return pos;
+    }
+
+    // Метод: + notifyNextReader(): void (Был пропущен в вашем коде)
+    public void NotifyNextReader()
+    {
+        Console.WriteLine("[ReservationQueue] NotifyNextReader вызван.");
+        var nextReservation = GetNextReservation();
+        if (nextReservation != null)
+        {
+            // Здесь должна быть логика NotificationService, но согласно классу Queue, мы просто инициируем процесс
+            Console.WriteLine($"*** УВЕДОМЛЕНИЕ ОТПРАВЛЕНО *** Пользователю {nextReservation.AccountId} для книги {_bookId}");
+        }
+        else
+        {
+            Console.WriteLine("[ReservationQueue] Некого уведомлять.");
+        }
     }
 }
 
 // Класс Loan
 public class Loan
 {
-    public string Id { get; set; }
-    public string AccountId { get; set; }
-    public string BookItemId { get; set; }
-    public DateTime IssueDate { get; set; }
-    public DateTime DueDate { get; set; }
+    // Поля диаграммы: - id, - accountId, - bookItemId, - issueDate, - dueDate
+    public string Id { get; private set; }
+    public string AccountId { get; private set; }
+    public string BookItemId { get; private set; }
+    public DateTime IssueDate { get; private set; }
+    public DateTime DueDate { get; private set; }
 
+    // Конструктор: + Loan(accountId: String, bookItemId: String, issueDate: Date, dueDate: Date)
     public Loan(string accountId, string bookItemId, DateTime issueDate, DateTime dueDate)
     {
-        Console.WriteLine($"\n[Loan] Создание нового займа (Loan)...");
+        Console.WriteLine($"\n[Loan] Создание займа. Аккаунт: {accountId}, Экземпляр: {bookItemId}");
+        
         Id = Guid.NewGuid().ToString();
         AccountId = accountId;
         BookItemId = bookItemId;
         IssueDate = issueDate;
         DueDate = dueDate;
-        
-        Console.WriteLine($"[Loan] Займ создан: Id={Id}, Account={AccountId}, Срок до: {DueDate}");
+
+        Console.WriteLine($"[Loan] Займ создан успешно. ID: {Id}, Срок возврата: {DueDate}");
     }
 }
 
