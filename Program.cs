@@ -90,6 +90,7 @@ public class Cell : IComponent
             book.Location = this;
             return true;
         }
+
         return false;
     }
 
@@ -100,17 +101,17 @@ public class Cell : IComponent
         {
             // Проверяем соответствие поисковому запросу
             bool matches = true;
-            if (!string.IsNullOrEmpty(title) && 
+            if (!string.IsNullOrEmpty(title) &&
                 !BookItem.Book.Title.Contains(title, StringComparison.OrdinalIgnoreCase))
                 matches = false;
-            if (!string.IsNullOrEmpty(author) && 
+            if (!string.IsNullOrEmpty(author) &&
                 !BookItem.Book.Author.Contains(author, StringComparison.OrdinalIgnoreCase))
                 matches = false;
-            
+
             if (matches)
             {
-                result.Add(new BookInfo 
-                { 
+                result.Add(new BookInfo
+                {
                     Id = BookItem.Book.Id,
                     Title = BookItem.Book.Title,
                     Author = BookItem.Book.Author,
@@ -119,6 +120,7 @@ public class Cell : IComponent
                 });
             }
         }
+
         return result;
     }
 }
@@ -147,6 +149,7 @@ public class Shelf : IComponent
             if (availableLocation != null)
                 return availableLocation;
         }
+
         return null;
     }
 
@@ -157,6 +160,7 @@ public class Shelf : IComponent
         {
             return availableLocation.PlaceBook(book);
         }
+
         return false;
     }
 
@@ -167,6 +171,7 @@ public class Shelf : IComponent
         {
             result.AddRange(cell.SearchBooks(title, author));
         }
+
         return result;
     }
 }
@@ -195,6 +200,7 @@ public class Cabinet : IComponent
             if (availableLocation != null)
                 return availableLocation;
         }
+
         return null;
     }
 
@@ -205,6 +211,7 @@ public class Cabinet : IComponent
         {
             return availableLocation.PlaceBook(book);
         }
+
         return false;
     }
 
@@ -215,6 +222,7 @@ public class Cabinet : IComponent
         {
             result.AddRange(shelf.SearchBooks(title, author));
         }
+
         return result;
     }
 }
@@ -248,8 +256,8 @@ public class Catalog : IComponent
 
         // Альтернативный поиск по книгам
         return Books.Where(b =>
-            (string.IsNullOrEmpty(title) || b.Title.Contains(title, StringComparison.OrdinalIgnoreCase)) &&
-            (string.IsNullOrEmpty(author) || b.Author.Contains(author, StringComparison.OrdinalIgnoreCase)))
+                (string.IsNullOrEmpty(title) || b.Title.Contains(title, StringComparison.OrdinalIgnoreCase)) &&
+                (string.IsNullOrEmpty(author) || b.Author.Contains(author, StringComparison.OrdinalIgnoreCase)))
             .Select(b => new BookInfo
             {
                 Id = b.Id,
@@ -273,6 +281,7 @@ public class Catalog : IComponent
                 BookInstance = bookInstance
             };
         }
+
         return null;
     }
 
@@ -289,6 +298,7 @@ public class Catalog : IComponent
                 BookInstance = bookInstance
             };
         }
+
         return null;
     }
 
@@ -317,7 +327,7 @@ public class Catalog : IComponent
             bookInstance.Book = book;
             book.BooksAvailable.Add(bookInstance.Id);
         }
-        
+
         // Размещаем книгу в хранилище
         if (RootCabinet != null && RootCabinet.PlaceBook(bookInstance))
         {
@@ -349,11 +359,9 @@ public class Reservation
     public DateTime ExpiryDate { get; private set; }
 
     // Конструктор по умолчанию (необходим, так как AddReservation инициализирует объект)
-    public Reservation() 
+    public Reservation()
     {
-        // Инициализируем ID сразу, или можно внутри AddReservation,
-        // но обычно объект должен иметь ID.
-        Id = Guid.NewGuid().ToString(); 
+        Id = Guid.NewGuid().ToString();
     }
 
     // Метод AddReservation согласно диаграмме: + addReservation(accountId: String, bookId: String): String
@@ -410,21 +418,22 @@ public class ReservationQueue
     public string AddReservation(string accountId, string bookId)
     {
         Console.WriteLine($"\n[ReservationQueue] Добавление в очередь. Книга: {bookId}, Аккаунт: {accountId}");
-        
+
         // В диаграмме этот метод принимает bookId, хотя сама очередь уже привязана к книге.
         // Возможно, это для сверки или если очередь общая (хотя диаграмма ISB говорит Map<String, ReservationQueue>).
         if (bookId != _bookId)
         {
-            Console.WriteLine($"[ReservationQueue] Внимание! ID книги ({bookId}) не совпадает с ID очереди ({_bookId}). Обновляем ID очереди.");
+            Console.WriteLine(
+                $"[ReservationQueue] Внимание! ID книги ({bookId}) не совпадает с ID очереди ({_bookId}). Обновляем ID очереди.");
             _bookId = bookId;
         }
 
         var reservation = new Reservation();
         string resId = reservation.AddReservation(accountId, bookId);
-        
+
         _reservations.Add(reservation);
         Console.WriteLine($"[ReservationQueue] Бронь добавлена. Всего в очереди: {_reservations.Count}");
-        
+
         return resId;
     }
 
@@ -433,12 +442,12 @@ public class ReservationQueue
     {
         Console.WriteLine("[ReservationQueue] Запрос следующей активной брони...");
         var next = _reservations.FirstOrDefault(r => r.Status == "Active");
-        
+
         if (next != null)
             Console.WriteLine($"[ReservationQueue] Найдена бронь: {next.Id} для {next.AccountId}");
         else
             Console.WriteLine("[ReservationQueue] Активных броней нет.");
-            
+
         return next;
     }
 
@@ -448,7 +457,7 @@ public class ReservationQueue
         Console.WriteLine($"[ReservationQueue] Вычисление позиции для {accountId}...");
         var activeReservations = _reservations.Where(r => r.Status == "Active").ToList();
         var reservation = activeReservations.FirstOrDefault(r => r.AccountId == accountId);
-        
+
         int pos = reservation != null ? activeReservations.IndexOf(reservation) + 1 : -1;
         Console.WriteLine($"[ReservationQueue] Позиция: {pos}");
         return pos;
@@ -462,7 +471,8 @@ public class ReservationQueue
         if (nextReservation != null)
         {
             // Здесь должна быть логика NotificationService, но согласно классу Queue, мы просто инициируем процесс
-            Console.WriteLine($"*** УВЕДОМЛЕНИЕ ОТПРАВЛЕНО *** Пользователю {nextReservation.AccountId} для книги {_bookId}");
+            Console.WriteLine(
+                $"УВЕДОМЛЕНИЕ ОТПРАВЛЕНО -> Пользователю {nextReservation.AccountId} для книги {_bookId}");
         }
         else
         {
@@ -485,7 +495,7 @@ public class Loan
     public Loan(string accountId, string bookItemId, DateTime issueDate, DateTime dueDate)
     {
         Console.WriteLine($"\n[Loan] Создание займа. Аккаунт: {accountId}, Экземпляр: {bookItemId}");
-        
+
         Id = Guid.NewGuid().ToString();
         AccountId = accountId;
         BookItemId = bookItemId;
@@ -519,7 +529,6 @@ public class Account
         Email = email;
         Status = "Active";
         CurrentLoans = 0;
-        Console.WriteLine($"Initial values ​​are set, status is active");
         Console.WriteLine($"Account created with QR-code: {Id}");
     }
 
@@ -553,13 +562,13 @@ public class Account
         bool isActive = Status == "Active";
         int maxBooksAllowed = 5;
         bool withinLimit = CurrentLoans < maxBooksAllowed;
-        
+
         Console.WriteLine($"Parameters - BooksOnHand.Count: {BooksOnHand.Count}, " +
-                         $"max allowed: {maxBooksAllowed}, withinLimit: {withinLimit}");
+                          $"max allowed: {maxBooksAllowed}, withinLimit: {withinLimit}");
         Console.WriteLine($"hasOverdue: {hasOverdue}, hasFines: {hasFines}, isActive: {isActive}");
-        
+
         bool result = withinLimit && !hasOverdue && !hasFines && isActive;
-        
+
         if (!result)
         {
             Console.WriteLine($"Account {Id} cannot borrow more books. Reasons:");
@@ -568,7 +577,7 @@ public class Account
             if (hasFines) Console.WriteLine($"  - Has unpaid fines ({CurrentLoans} overdue books)");
             if (!isActive) Console.WriteLine($"  - Account is not active (status: {Status})");
         }
-        
+
         return result;
     }
 
@@ -584,7 +593,8 @@ public class Account
     public void AddReservation(string reservationId)
     {
         Console.WriteLine("Account: AddReservation");
-        Console.WriteLine($"Adding reservation with ID: {reservationId}. Current reservations: {CurrentReservations.Count}");
+        Console.WriteLine(
+            $"Adding reservation with ID: {reservationId}. Current reservations: {CurrentReservations.Count}");
         CurrentReservations.Add(reservationId);
         Console.WriteLine($"Reservation added. New reservation count: {CurrentReservations.Count}");
     }
@@ -595,28 +605,28 @@ public class Account
         Console.WriteLine($"Returning full name: {FullName}");
         return FullName;
     }
-    
+
     public string GetPhone()
     {
         Console.WriteLine("Account: GetPhone");
         Console.WriteLine($"Returning phone: {Phone}");
         return Phone;
     }
-    
+
     public string GetEmail()
     {
         Console.WriteLine("Account: GetEmail");
         Console.WriteLine($"Returning email: {Email}");
         return Email;
     }
-    
+
     public string GetId()
     {
         Console.WriteLine("Account: GetId");
         Console.WriteLine($"Returning ID: {Id}");
         return Id;
     }
-    
+
     public string GetStatus()
     {
         Console.WriteLine("Account: GetStatus");
@@ -645,7 +655,7 @@ public class Account
     {
         Console.WriteLine("Account: CreateLoan");
         Console.WriteLine($"Creating loan - accountId: {accountId}, bookItemId: {bookItemId}, " +
-                         $"issueDate: {issueDate}, dueDate: {dueDate}");
+                          $"issueDate: {issueDate}, dueDate: {dueDate}");
         var loan = new Loan(accountId, bookItemId, issueDate, dueDate);
         Console.WriteLine($"Loan created with ID: {loan.Id}");
         return loan;
@@ -675,7 +685,6 @@ public class ISB
         Console.WriteLine($"ISB: RegisterAccount: name - {fullName}, phone - {phone}, email - {email}");
         var account = new Account(fullName, phone, email);
         accounts[account.Id] = account;
-        Console.WriteLine($"ISB: RegisterAccount: the Account object is added to the accounts collection");
         return account;
     }
 
@@ -704,15 +713,12 @@ public class ISB
 
         if (!reservationQueues.ContainsKey(bookId))
         {
-            reservationQueues[bookId] = new ReservationQueue { BookId = bookId };
+            reservationQueues[bookId] = new ReservationQueue(bookId);
         }
 
         var reservationId = reservationQueues[bookId].AddReservation(accountId, bookId);
         var reservation = new Reservation
         {
-            Id = reservationId,
-            AccountId = accountId,
-            BookId = bookId
         };
         Console.WriteLine("add reservation");
         accounts[accountId].AddReservation(reservationId);
@@ -749,6 +755,7 @@ public class ISB
             var daysOverdue = (DateTime.Now - loan.DueDate).Days;
             return daysOverdue > 0; // true если есть долг
         }
+
         return false;
     }
 
@@ -796,28 +803,217 @@ public class ISB
     }
 }
 
-// Пример использования
+
 class Program
 {
     static void Main(string[] args)
     {
+        Console.WriteLine("ДЕМОНСТРАЦИЯ\n");
+
         var isb = new ISB();
 
-        // Регистрация аккаунта
-        var account = isb.RegisterAccount("Иван Иванов", "+79123456789", "ivan@example.com");
 
-        // Поиск книг
-        var books = isb.SearchBooks("C#", "Microsoft");
+        Console.WriteLine("ШАГ 1: Регистрация нового пользователя");
+        Console.WriteLine("-----------------------------------");
+        var account1 = isb.RegisterAccount("Анна Петрова", "+79161234567", "anna@mail.ru");
+        var account2 = isb.RegisterAccount("Сергей Иванов", "+79039876543", "sergey@mail.ru");
+        Console.WriteLine($"Зарегистрирован читатель 1: {account1.GetFullName()}, ID: {account1.GetId()}");
+        Console.WriteLine($"Зарегистрирован читатель 2: {account2.GetFullName()}, ID: {account2.GetId()}\n");
 
-        // Резервация книги
-        var reservation = isb.ReserveBook(account.Id, "book123");
 
-        // Выдача книги
-        var loan = isb.IssueBook(account.Id, "book123", DateTime.Now, DateTime.Now.AddDays(14));
+        Console.WriteLine("ШАГ 2: Создание каталога и добавление книг");
 
-        Console.WriteLine($"Account created: {account.FullName}");
-        Console.WriteLine($"Books found: {books.Count}");
-        Console.WriteLine($"Reservation ID: {reservation.Id}");
-        Console.WriteLine($"Loan ID: {loan.Id}");
+        // Создаем книги
+        var book1 = new Book
+        {
+            Id = "B001", Title = "Мастер и Маргарита", Author = "Михаил Булгаков", Year = 1967, Description = "Роман"
+        };
+        var book2 = new Book
+        {
+            Id = "B002", Title = "Преступление и наказание", Author = "Фёдор Достоевский", Year = 1866,
+            Description = "Роман"
+        };
+        var book3 = new Book
+            { Id = "B003", Title = "Война и мир", Author = "Лев Толстой", Year = 1869, Description = "Роман-эпопея" };
+
+        // Создаем экземпляры книг
+        var bookInstance1 = new BookInstance { Id = "BI001", BookId = "B001", Status = "Available" };
+        var bookInstance2 = new BookInstance
+            { Id = "BI002", BookId = "B001", Status = "Available" }; // Второй экземпляр
+        var bookInstance3 = new BookInstance { Id = "BI003", BookId = "B002", Status = "Available" };
+        var bookInstance4 = new BookInstance { Id = "BI004", BookId = "B003", Status = "Available" };
+
+        // Создаем каталог и добавляем книги
+        var catalog = new Catalog();
+        catalog.AddBook(book1);
+        catalog.AddBook(book2);
+        catalog.AddBook(book3);
+
+        // Размещаем книги в хранилище
+        catalog.AddBookInstance(bookInstance1);
+        catalog.AddBookInstance(bookInstance2);
+        catalog.AddBookInstance(bookInstance3);
+        catalog.AddBookInstance(bookInstance4);
+
+        Console.WriteLine($"В каталог добавлено книг: {catalog.Books.Count}");
+        Console.WriteLine($"Создано экземпляров: 4\n");
+        
+        Console.WriteLine("ШАГ 3: Поиск книг в каталоге");
+
+        Console.WriteLine("Поиск по названию 'мастер':");
+        var searchResults1 = catalog.SearchBooks("мастер", "");
+        foreach (var book in searchResults1)
+        {
+            Console.WriteLine($"  Найдено: {book.Title} - {book.Author} ({book.Year})");
+        }
+
+        Console.WriteLine("\nПоиск по автору 'толстой':");
+        var searchResults2 = catalog.SearchBooks("", "толстой");
+        foreach (var book in searchResults2)
+        {
+            Console.WriteLine($"  Найдено: {book.Title} - {book.Author} ({book.Year})");
+        }
+
+        Console.WriteLine("\nПоиск всех книг:");
+        var searchResults3 = catalog.SearchBooks("", "");
+        Console.WriteLine($"  Всего найдено книг: {searchResults3.Count}\n");
+        
+        Console.WriteLine("ШАГ 4: Работа с ISB - сканирование QR-кода");
+
+
+        string qrCodeData = account1.GetId(); // QR-код содержит ID пользователя
+        string accountId = isb.ScanQRCode(qrCodeData);
+        Console.WriteLine($"Сканирован QR-код: {qrCodeData}");
+        Console.WriteLine($"Получен ID аккаунта: {accountId}");
+
+        bool accountExists = isb.TryFindAccount(accountId);
+        Console.WriteLine($"Аккаунт существует: {accountExists}");
+
+        var userInfo = isb.GetUserInfo(accountId);
+        if (userInfo != null)
+        {
+            Console.WriteLine($"Информация о пользователе: {userInfo.GetFullName()}, статус: {userInfo.GetStatus()}\n");
+        }
+        
+        Console.WriteLine("ШАГ 5: Проверка возможности взятия книг");
+
+        Console.WriteLine("Проверка читателя Анна Петрова:");
+        Console.WriteLine($"  Есть просроченные книги: {account1.HasOverdueBooks()}");
+        Console.WriteLine($"  Есть штрафы: {account1.HasUnpaidFines()}");
+        Console.WriteLine($"  Может взять еще книги: {account1.CanBorrowMore()}\n");
+        
+        Console.WriteLine("ШАГ 6: Выдача книги (когда книга доступна)");
+
+
+        try
+        {
+            Console.WriteLine("Попытка выдать книгу 'Мастер и Маргарита' (ID: B001):");
+            var bookLocation = catalog.FindBook("B001");
+            if (bookLocation != null && bookLocation.IsAvailable)
+            {
+                Console.WriteLine($"  Книга найдена в хранилище, местоположение: {bookLocation.Location}");
+
+                // Выдаем книгу на 14 дней
+                var loan = isb.IssueBook(account1.GetId(), "B001", DateTime.Now, DateTime.Now.AddDays(14));
+                Console.WriteLine($"  Книга выдана успешно!");
+                Console.WriteLine($"  ID займа: {loan.Id}");
+                Console.WriteLine($"  Дата возврата: {loan.DueDate:dd.MM.yyyy}");
+
+                // Проверяем статус аккаунта после выдачи
+                Console.WriteLine($"  У пользователя теперь книг на руках: {account1.CurrentLoans}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  Ошибка: {ex.Message}");
+        }
+        
+        Console.WriteLine("\nШАГ 7: Бронирование книги (когда все экземпляры выданы)");
+
+        try
+        {
+            Console.WriteLine("Второй читатель пытается взять ту же книгу 'Мастер и Маргарита':");
+
+            // Сначала проверяем доступность
+            var bookLocation2 = catalog.FindBook("B001");
+            if (bookLocation2 == null || !bookLocation2.IsAvailable)
+            {
+                Console.WriteLine("  Все экземпляры книги выданы, предлагаем бронирование");
+
+                // Бронируем книгу
+                var reservation = isb.ReserveBook(account2.GetId(), "B001");
+                Console.WriteLine($"  Книга забронирована!");
+                Console.WriteLine($"  ID бронирования: {reservation.Id}");
+                Console.WriteLine($"  Позиция в очереди: 1 (первый в очереди)");
+
+                // Проверяем статус аккаунта после бронирования
+                Console.WriteLine($"  У пользователя активных бронирований: {account2.CurrentReservations.Count}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  Ошибка: {ex.Message}");
+        }
+        
+        Console.WriteLine("\nШАГ 8: Работа с очередью бронирований");
+
+
+        // Создаем очередь бронирований
+        var reservationQueue = new ReservationQueue("B001");
+
+        // Добавляем несколько бронирований
+        Console.WriteLine("Добавляем бронирования в очередь:");
+        var resId1 = reservationQueue.AddReservation("ACC001", "B001");
+        var resId2 = reservationQueue.AddReservation("ACC002", "B001");
+        var resId3 = reservationQueue.AddReservation("ACC003", "B001");
+
+        // Проверяем позиции в очереди
+        Console.WriteLine($"\nПроверяем позиции в очереди:");
+        Console.WriteLine($"  ACC001 позиция: {reservationQueue.GetPosition("ACC001")}");
+        Console.WriteLine($"  ACC002 позиция: {reservationQueue.GetPosition("ACC002")}");
+        Console.WriteLine($"  ACC003 позиция: {reservationQueue.GetPosition("ACC003")}");
+
+        // Получаем следующую бронь
+        var nextReservation = reservationQueue.GetNextReservation();
+        if (nextReservation != null)
+        {
+            Console.WriteLine($"\nСледующая бронь в очереди: {nextReservation.AccountId}");
+            reservationQueue.NotifyNextReader();
+        }
+        
+        Console.WriteLine("\nШАГ 9: Возврат книги");
+
+
+        Console.WriteLine("Проверяем, есть ли долг по возвращенной книге:");
+        bool hasDebt = isb.CheckReturnBook("B001");
+        Console.WriteLine($"  Есть долг: {hasDebt}");
+
+        Console.WriteLine("\nОбновляем информацию о возврате книги:");
+        isb.UpdateReturnBook("B001");
+
+        Console.WriteLine($"  У пользователя после возврата книг на руках: {account1.CurrentLoans}");
+        
+        Console.WriteLine("\nШАГ 10: Создание займа напрямую");
+
+
+        var directLoan = new Loan("ACC999", "BI005", DateTime.Now, DateTime.Now.AddDays(21));
+        Console.WriteLine($"Создан займ напрямую:");
+        Console.WriteLine($"  ID: {directLoan.Id}");
+        Console.WriteLine($"  Экземпляр книги: {directLoan.BookItemId}");
+        Console.WriteLine($"  Срок возврата: {directLoan.DueDate:dd.MM.yyyy}");
+        
+        Console.WriteLine("\nШАГ 11: Проверка композитной структуры");
+
+
+        Console.WriteLine("Проверяем доступные места в хранилище:");
+        var availableLocation = catalog.FindAvailableLocation();
+        if (availableLocation != null)
+        {
+            Console.WriteLine($"  Найдено свободное место в хранилище");
+        }
+        else
+        {
+            Console.WriteLine($"  Свободных мест нет");
+        }
     }
 }
